@@ -43,9 +43,12 @@
         </StatusBar>
 
         <DockPanel DockPanel.Dock="Top">
-            <DockPanel LastChildFill="False" Width="150" DockPanel.Dock="Right">
-                <ComboBox DockPanel.Dock="Top"></ComboBox>
+            <DockPanel LastChildFill="True" Width="250" DockPanel.Dock="Right">
+                <ComboBox x:Name="YoloModels" DockPanel.Dock="Top" SelectedIndex="0"
+                          SelectedItem="{Binding Path=SelectedYoloModel, Mode=OneWayToSource}"
+                          DisplayMemberPath="Name" IsSynchronizedWithCurrentItem="True" />
                 <Button x:Name="FindObjects" DockPanel.Dock="Top" Content="Find" />
+                <TextBox Text="{Binding Path=Info}" />
             </DockPanel>
 
             <Border BorderThickness="1" BorderBrush="Black" Margin="5">

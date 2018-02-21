@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -15,18 +17,30 @@ namespace YoloDetector.ViewModels
 {
     public class ShellViewModel : Screen
     {
-
-        private Mat _imageMat = new Mat();
+        private Mat _start = new Mat();
+        private Mat _finish = new Mat();
         private WriteableBitmap _image;
         private string _filePath;
+        private YoloModel _selectedYoloModel;
+        private string _info;
 
-        public Mat ImageMat
+        public Mat Start
         {
-            get => _imageMat;
+            get => _start;
             set
             {
-                _imageMat = value;
-                Image = ImageMat.ToWriteableBitmap(PixelFormats.Bgr24);
+                _start = value;
+                Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
+            }
+        }
+
+        public Mat Finish
+        {
+            get => _finish;
+            set
+            {
+                _finish = value;
+                Image = Finish.ToWriteableBitmap(PixelFormats.Bgr24);
             }
         }
 
@@ -37,6 +51,7 @@ namespace YoloDetector.ViewModels
             {
                 _image = value;
                 NotifyOfPropertyChange(() => Image);
+                NotifyOfPropertyChange(() => CanFindObjects);
             }
         }
 
@@ -49,6 +64,29 @@ namespace YoloDetector.ViewModels
                 NotifyOfPropertyChange(() => FilePath);
             }
         }
+
+        public BindableCollection<YoloModel> YoloModels { get; set; } = YoloModel.GetYoloModels();
+
+        public YoloModel SelectedYoloModel
+        {
+            get => _selectedYoloModel;
+            set
+            {
+                _selectedYoloModel = value;
+                NotifyOfPropertyChange(() => SelectedYoloModel);
+            }
+        }
+
+        public string Info
+        {
+            get => _info;
+            set
+            {
+                _info = value;
+                NotifyOfPropertyChange(() => Info);
+            }
+        }
+
 
         public void OpenImage()
         {
@@ -63,7 +101,7 @@ namespace YoloDetector.ViewModels
             try
             {
                 FilePath = dlg.FileName;
-                ImageMat = new Mat(FilePath, ImreadModes.AnyDepth | ImreadModes.AnyColor);
+                Start = new Mat(FilePath, ImreadModes.AnyDepth | ImreadModes.AnyColor);
             }
             catch (Exception ex)
             {
@@ -76,26 +114,39 @@ namespace YoloDetector.ViewModels
             }
         }
 
+        public bool CanFindObjects => Image != null;
+
         public void FindObjects()
         {
-            var cfg = "yolo/coco/coco.cfg";
-            var model = "yolo/coco/coco.weights"; //YOLOv2 544x544
-            string[] labels = File.ReadAllLines("yolo/coco/coco.names");
+            var cfg = SelectedYoloModel.Cfg;
+            var size = int.Parse(
+                new string(File.ReadAllLines(cfg).First(x => x.StartsWith("width"))
+                    .Where(char.IsDigit).ToArray())
+            );
+
+            var model = SelectedYoloModel.Model;
+            var labels = SelectedYoloModel.Labels;
+            var colors = SelectedYoloModel.Colors;
             var threshold = 0.3;
 
-            var w = ImageMat.Width;
-            var h = ImageMat.Height;
+            StringBuilder result = new StringBuilder();
+
+            Finish = Start.Clone();
+            var w = Finish.Width;
+            var h = Finish.Height;
+
             //setting blob, parameter are important
-            var blob = CvDnn.BlobFromImage(ImageMat, 1 / 255.0, new OpenCvSharp.Size(608, 608), new Scalar(), true, false);
+            var blob = CvDnn.BlobFromImage(Finish, 1 / 255.0, new OpenCvSharp.Size(size, size),
+                new Scalar(), true, false);
             var net = CvDnn.ReadNetFromDarknet(cfg, model);
             net.SetInput(blob, "data");
 
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
             //forward model
             var prob = net.Forward();
             sw.Stop();
-            //Console.WriteLine($"Runtime:{sw.ElapsedMilliseconds} ms");
+            result.AppendLine($"Runtime: {sw.ElapsedMilliseconds} ms");
 
             /* YOLO2 VOC output
              0 1 : center                    2 3 : w/h
@@ -121,20 +172,26 @@ namespace YoloDetector.ViewModels
                         var height = prob.At<float>(i, 3) * h;
                         //label formating
                         var label = $"{labels[classes]} {probability * 100:0.00}%";
-                        //Console.WriteLine($"confidence {confidence * 100:0.00}% {label}");
+                        result.AppendLine($"confidence {confidence * 100:0.00}% {label}");
                         var x1 = (centerX - width / 2) < 0 ? 0 : centerX - width / 2; //avoid left side over edge
                         //draw result
-                        ImageMat.Rectangle(new OpenCvSharp.Point(x1, centerY - height / 2),
-                            new OpenCvSharp.Point(centerX + width / 2, centerY + height / 2), Helper.Colors[classes], 2);
+                        Finish.Rectangle(new OpenCvSharp.Point(x1, centerY - height / 2),
+                            new OpenCvSharp.Point(centerX + width / 2, centerY + height / 2), colors[classes],
+                            2);
                         var textSize = Cv2.GetTextSize(label, HersheyFonts.HersheyTriplex, 0.5, 1, out var baseline);
-                        Cv2.Rectangle(ImageMat, new OpenCvSharp.Rect(new OpenCvSharp.Point(x1, centerY - height / 2 - textSize.Height - baseline),
-                            new OpenCvSharp.Size(textSize.Width, textSize.Height + baseline)), Helper.Colors[classes], Cv2.FILLED);
-                        Cv2.PutText(ImageMat, label, new OpenCvSharp.Point(x1, centerY - height / 2 - baseline),
+                        Cv2.Rectangle(Finish, new OpenCvSharp.Rect(
+                                new OpenCvSharp.Point(x1, centerY - height / 2 - textSize.Height - baseline),
+                                new OpenCvSharp.Size(textSize.Width, textSize.Height + baseline)),
+                            colors[classes],
+                            Cv2.FILLED);
+                        Cv2.PutText(Finish, label, new OpenCvSharp.Point(x1, centerY - height / 2 - baseline),
                             HersheyFonts.Italic, 0.5, Scalar.Black);
-                        ImageMat = ImageMat;
+
                     }
                 }
             }
+            Finish = Finish;
+            Info = result.ToString();
         }
     }
 }
