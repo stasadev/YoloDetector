@@ -178,7 +178,7 @@ namespace YoloDetector.Models
                                 new Point(x1, centerY - height / 2 - baseline),
                                 HersheyFonts.Italic,
                                 0.5,
-                                Scalar.Black
+                                UiServices.GetReadableForeColor(_colors[classes])
                             );
                         }
                     }

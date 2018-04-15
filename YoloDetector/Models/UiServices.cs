@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using OpenCvSharp;
 
 namespace YoloDetector.Models
 {
@@ -23,6 +24,16 @@ namespace YoloDetector.Models
         public static string Locale(string param)
         {
             return (string) Application.Current.FindResource(param);
+        }
+
+        public static Scalar GetReadableForeColor(Scalar c)
+        {
+            return (int) Math.Sqrt(
+                       c.Val0 * c.Val0 * .299 +
+                       c.Val1 * c.Val1 * .587 +
+                       c.Val2 * c.Val2 * .114) > 130
+                ? Scalar.Black
+                : Scalar.White;
         }
     }
 }
