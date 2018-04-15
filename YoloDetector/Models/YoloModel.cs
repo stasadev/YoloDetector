@@ -1,7 +1,10 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Caliburn.Micro;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
@@ -78,99 +81,111 @@ namespace YoloDetector.Models
         }
 
         /// <summary>
-        /// Find object from darknet yolo
+        /// Find object in darknet yolo
         /// </summary>
         /// <param name="image">input image</param>
         /// <param name="threshold">minimum threshold</param>
-        /// <param name="text">result percents in string format</param>
-        /// <returns>Image with labels</returns>
-        public Mat FindObjects(Mat image, double threshold, out string text)
+        /// <returns>Image with labels and labels</returns>
+        public Task<Tuple<Mat, string>> FindObjects(Mat image, double threshold)
         {
-            // setting blob, parameter are important
-            Mat blob = CvDnn.BlobFromImage(image, 1 / 255.0, new Size(GetSize(), GetSize()),
-                new Scalar(), true, false);
-
-            _net.SetInput(blob, "data");
-
-            var sw = new Stopwatch();
-
-            sw.Start();
-
-            // forward model
-            Mat prob = _net.Forward();
-
-            sw.Stop();
-
-            var result = new StringBuilder();
-            result.AppendLine($"Runtime: {sw.ElapsedMilliseconds} ms");
-
-            /* YOLO2 VOC output
-             0 1 : center                    2 3 : w/h
-             4 : confidence                  5 ~24 : class probability */
-            const int prefix = 5; //skip 0~4
-
-            for (int i = 0; i < prob.Rows; i++)
+            return Task.Run(() =>
             {
-                var confidence = prob.At<float>(i, 4);
+                // setting blob, parameter are important
+                Mat blob = CvDnn.BlobFromImage(image, 1 / 255.0, new Size(GetSize(), GetSize()),
+                    new Scalar(), true, false);
 
-                if (confidence > threshold)
+                _net.SetInput(blob, "data");
+
+                var sw = new Stopwatch();
+
+                sw.Start();
+
+                // forward model
+                Mat prob = _net.Forward();
+
+                sw.Stop();
+
+                var result = new StringBuilder();
+                result.AppendLine($"Runtime: {sw.ElapsedMilliseconds} ms");
+
+                /* YOLO2 VOC output
+                 0 1 : center                    2 3 : w/h
+                 4 : confidence                  5 ~24 : class probability */
+                const int prefix = 5; //skip 0~4
+
+                var objectNumbers = new Dictionary<int, int>();
+
+                for (int i = 0; i < prob.Rows; i++)
                 {
-                    // get classes probability
-                    Cv2.MinMaxLoc(prob.Row[i].ColRange(prefix, prob.Cols), out _, out Point max);
-                    int classes = max.X;
-                    var probability = prob.At<float>(i, classes + prefix);
+                    var confidence = prob.At<float>(i, 4);
 
-                    // more accuracy
-                    if (probability > threshold)
+                    if (confidence > threshold)
                     {
-                        // get center and width/height
+                        // get classes probability
+                        Cv2.MinMaxLoc(prob.Row[i].ColRange(prefix, prob.Cols), out _, out Point max);
+                        int classes = max.X;
+                        var probability = prob.At<float>(i, classes + prefix);
 
-                        var centerX = prob.At<float>(i, 0) * image.Width;
-                        var centerY = prob.At<float>(i, 1) * image.Height;
-                        var width = prob.At<float>(i, 2) * image.Width;
-                        var height = prob.At<float>(i, 3) * image.Height;
+                        // more accuracy
+                        if (probability > threshold)
+                        {
+                            // if it is not first - increase object number, else set 1
+                            if (objectNumbers.ContainsKey(classes))
+                            {
+                                objectNumbers[classes]++;
+                            }
+                            else
+                            {
+                                objectNumbers[classes] = 1;
+                            }
 
-                        // label formatting
-                        var label = $"{_labels[classes]} {probability * 100:0.00}%";
-                        result.AppendLine($"confidence {confidence * 100:0.00}% {label}");
+                            // get center and width/height
 
-                        // avoid left side over edge
-                        var x1 = (centerX - width / 2) < 0 ? 0 : centerX - width / 2;
+                            var centerX = prob.At<float>(i, 0) * image.Width;
+                            var centerY = prob.At<float>(i, 1) * image.Height;
+                            var width = prob.At<float>(i, 2) * image.Width;
+                            var height = prob.At<float>(i, 3) * image.Height;
 
-                        // draw result
-                        image.Rectangle(
-                            new Point(x1, centerY - height / 2),
-                            new Point(centerX + width / 2, centerY + height / 2), _colors[classes],
-                            2
-                        );
-                        var textSize = Cv2.GetTextSize(label, HersheyFonts.HersheyTriplex, 0.5, 1, out var baseline);
+                            // label formatting
+                            var label = $"{_labels[classes]} #{objectNumbers[classes]} {probability * 100:0.00}%";
+                            result.AppendLine(label);
 
-                        Cv2.Rectangle(
-                            image,
-                            new Rect(
-                                new Point(x1, centerY - height / 2 - textSize.Height - baseline),
-                                new Size(textSize.Width, textSize.Height + baseline)
-                            ),
-                            _colors[classes],
-                            Cv2.FILLED
-                        );
+                            // avoid left side over edge
+                            var x1 = (centerX - width / 2) < 0 ? 0 : centerX - width / 2;
 
-                        Cv2.PutText(
-                            image,
-                            label,
-                            new Point(x1, centerY - height / 2 - baseline),
-                            HersheyFonts.Italic,
-                            0.5,
-                            Scalar.Black
-                        );
+                            // draw result
+                            image.Rectangle(
+                                new Point(x1, centerY - height / 2),
+                                new Point(centerX + width / 2, centerY + height / 2), _colors[classes],
+                                2
+                            );
+                            var textSize = Cv2.GetTextSize(label, HersheyFonts.HersheyTriplex, 0.5, 1,
+                                out var baseline);
+
+                            Cv2.Rectangle(
+                                image,
+                                new Rect(
+                                    new Point(x1, centerY - height / 2 - textSize.Height - baseline),
+                                    new Size(textSize.Width, textSize.Height + baseline)
+                                ),
+                                _colors[classes],
+                                Cv2.FILLED
+                            );
+
+                            Cv2.PutText(
+                                image,
+                                label,
+                                new Point(x1, centerY - height / 2 - baseline),
+                                HersheyFonts.Italic,
+                                0.5,
+                                Scalar.Black
+                            );
+                        }
                     }
-
                 }
 
-            }
-
-            text = result.ToString();
-            return image;
+                return new Tuple<Mat, string>(image, result.ToString());
+            });
         }
     }
 }

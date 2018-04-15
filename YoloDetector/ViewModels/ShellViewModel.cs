@@ -18,6 +18,9 @@ namespace YoloDetector.ViewModels
         private string _filePath;
         private YoloModel _selectedYoloModel;
         private string _info;
+        private double _threshold = 30;
+        private string _status = UiServices.Locale("Ready");
+        private Visibility _waitAnimation = Visibility.Collapsed;
 
         public Mat Start
         {
@@ -50,6 +53,7 @@ namespace YoloDetector.ViewModels
                 _image = value;
                 NotifyOfPropertyChange(() => Image);
                 NotifyOfPropertyChange(() => CanFindObjects);
+                NotifyOfPropertyChange(() => WaitAnimation);
             }
         }
 
@@ -97,12 +101,52 @@ namespace YoloDetector.ViewModels
             }
         }
 
+        /// <summary>
+        /// Slider
+        /// </summary>
+        public double Threshold
+        {
+            get => _threshold;
+            set
+            {
+                _threshold = value;
+                NotifyOfPropertyChange(() => Threshold);
+            }
+        }
 
+        /// <summary>
+        /// StatusBarItem
+        /// </summary>
+        public string Status
+        {
+            get => _status;
+            set
+            {
+                _status = value;
+                NotifyOfPropertyChange(() => Status);
+                NotifyOfPropertyChange(() => CanFindObjects);
+                NotifyOfPropertyChange(() => WaitAnimation);
+            }
+        }
+
+        public Visibility WaitAnimation
+        {
+            get => _waitAnimation;
+            set {
+                _waitAnimation = value;
+                NotifyOfPropertyChange(() => WaitAnimation);
+            }
+        }
+
+        /// <summary>
+        /// Button
+        /// </summary>
         public void OpenImage()
         {
             var dlg = new OpenFileDialog
             {
-                Filter = "Images (*.bmp;*.jpg;*.png;*.gif)|*.bmp;*.jpg;*.png;*.gif|All files (*.*)|*.*"
+                Filter = UiServices.Locale("ImageFilter"),
+                Title = UiServices.Locale("BtnOpenImage"),
             };
             var result = dlg.ShowDialog();
 
@@ -115,21 +159,40 @@ namespace YoloDetector.ViewModels
             }
             catch (Exception ex)
             {
-                if (ex.InnerException != null)
-                {
-                    ex = ex.InnerException;
-                }
-
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UiServices.ShowError(ex);
             }
         }
 
-        public bool CanFindObjects => Image != null;
+        public bool CanFindObjects => Image != null && Status == UiServices.Locale("Ready");
 
-        public void FindObjects()
+        /// <summary>
+        /// Button
+        /// </summary>
+        public async void FindObjects()
         {
-            Finish = SelectedYoloModel.FindObjects(Start.Clone(), 0.3, out var infoText);
-            Info = infoText;
+            try
+            {
+                Status = UiServices.Locale("Processing");
+                WaitAnimation = Visibility.Visible;
+
+                // convert percents
+                var threshold = Threshold / 100;
+
+                var tuple = await SelectedYoloModel.FindObjects(Start.Clone(), threshold);
+
+                // result image
+                Finish = tuple.Item1;
+
+                // show probabilities
+                Info = tuple.Item2;
+
+                Status = UiServices.Locale("Ready");
+                WaitAnimation = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                UiServices.ShowError(ex);
+            }
         }
     }
 }

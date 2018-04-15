@@ -1,0 +1,24 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- String resource that can be localized -->
+    <system:String x:Key="AppTitle">Yolo Detector</system:String>
+
+    <system:String x:Key="Ready">Ready</system:String>
+    <system:String x:Key="Processing">Processing...</system:String>
+    <system:String x:Key="Error">Error</system:String>
+    <system:String x:Key="ImageFilter">Images (*.bmp;*.jpg;*.png;*.gif)|*.bmp;*.jpg;*.png;*.gif|All files (*.*)|*.*</system:String>
+
+    <system:String x:Key="MenuFile">File</system:String>
+    <system:String x:Key="MenuExit">Exit</system:String>
+    <system:String x:Key="MenuHelp">Help</system:String>
+    <system:String x:Key="MenuAbout">About</system:String>
+
+    <system:String x:Key="BtnOpenImage">Open Image</system:String>
+    <system:String x:Key="BtnFind">Find</system:String>
+    <system:String x:Key="Threshold">Threshold: {0:N0}%</system:String>
+
+
+</ResourceDictionary>
