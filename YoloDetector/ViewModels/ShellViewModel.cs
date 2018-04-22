@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Caliburn.Micro;
@@ -17,10 +19,13 @@ namespace YoloDetector.ViewModels
         private WriteableBitmap _image;
         private string _filePath;
         private YoloModel _selectedYoloModel;
-        private string _info;
         private double _threshold = 30;
+        private string _runtime = string.Format(UiServices.Locale("Runtime"), 0);
         private string _status = UiServices.Locale("Ready");
         private Visibility _waitAnimation = Visibility.Collapsed;
+        private BindableCollection<string> _info = new BindableCollection<string>();
+        private BindableCollection<Image> _loadedImages = new BindableCollection<Image>();
+        private BindableCollection<YoloModel> _yoloModels = YoloModel.GetYoloModels();
 
         public Mat Start
         {
@@ -29,6 +34,7 @@ namespace YoloDetector.ViewModels
             {
                 _start = value;
                 Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
+                ClearResult();
             }
         }
 
@@ -73,7 +79,11 @@ namespace YoloDetector.ViewModels
         /// <summary>
         /// ComboBox
         /// </summary>
-        public BindableCollection<YoloModel> YoloModels { get; set; } = YoloModel.GetYoloModels();
+        public BindableCollection<YoloModel> YoloModels
+        {
+            get => _yoloModels;
+            set => _yoloModels = value;
+        }
 
         /// <summary>
         /// Selected item of ComboBox
@@ -85,13 +95,14 @@ namespace YoloDetector.ViewModels
             {
                 _selectedYoloModel = value;
                 NotifyOfPropertyChange(() => SelectedYoloModel);
+                ClearResult();
             }
         }
 
         /// <summary>
         /// TextBox
         /// </summary>
-        public string Info
+        public BindableCollection<string> Info
         {
             get => _info;
             set
@@ -129,13 +140,39 @@ namespace YoloDetector.ViewModels
             }
         }
 
+        /// <summary>
+        /// Visibility of BusyControl
+        /// </summary>
         public Visibility WaitAnimation
         {
             get => _waitAnimation;
-            set {
+            set
+            {
                 _waitAnimation = value;
                 NotifyOfPropertyChange(() => WaitAnimation);
             }
+        }
+
+        /// <summary>
+        /// TextBlock
+        /// </summary>
+        public string Runtime
+        {
+            get => _runtime;
+            set
+            {
+                _runtime = value;
+                NotifyOfPropertyChange(() => Runtime);
+            }
+        }
+
+        /// <summary>
+        /// Images ListBox
+        /// </summary>
+        public BindableCollection<Image> LoadedImages
+        {
+            get => _loadedImages;
+            set => _loadedImages = value;
         }
 
         /// <summary>
@@ -147,11 +184,38 @@ namespace YoloDetector.ViewModels
             {
                 Filter = UiServices.Locale("ImageFilter"),
                 Title = UiServices.Locale("BtnOpenImage"),
+                Multiselect = true,
             };
             var result = dlg.ShowDialog();
 
             if (!(result ?? false)) return;
 
+            LoadedImages.Clear();
+
+            foreach (var fileName in dlg.FileNames)
+            {
+                try
+                {
+                    Image img = new Image();
+                    BitmapImage src = new BitmapImage();
+                    src.BeginInit();
+                    src.UriSource = new Uri(fileName, UriKind.Relative);
+                    src.CacheOption = BitmapCacheOption.OnLoad;
+                    src.EndInit();
+                    img.Source = src;
+                    img.Stretch = Stretch.UniformToFill;
+                    img.MouseDown += Img_MouseDown;
+                    img.Tag = fileName;
+                    img.Cursor = Cursors.Hand;
+                    LoadedImages.Add(img);
+                }
+                catch (Exception ex)
+                {
+                    UiServices.ShowError(ex);
+                }
+            }
+
+            // load first image
             try
             {
                 FilePath = dlg.FileName;
@@ -163,6 +227,29 @@ namespace YoloDetector.ViewModels
             }
         }
 
+        private void Img_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                FilePath = (string) (sender as Image)?.Tag;
+                Start = new Mat(FilePath, ImreadModes.AnyDepth | ImreadModes.AnyColor);
+            }
+            catch (Exception ex)
+            {
+                UiServices.ShowError(ex);
+            }
+        }
+
+        private void ClearResult()
+        {
+            Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
+            Info.Clear();
+            Runtime = string.Format(UiServices.Locale("Runtime"), 0);
+        }
+
+        /// <summary>
+        /// Enable|Disable FindObjects button
+        /// </summary>
         public bool CanFindObjects => Image != null && Status == UiServices.Locale("Ready");
 
         /// <summary>
@@ -178,13 +265,18 @@ namespace YoloDetector.ViewModels
                 // convert percents
                 var threshold = Threshold / 100;
 
+                ClearResult();
+
                 var tuple = await SelectedYoloModel.FindObjects(Start.Clone(), threshold);
 
                 // result image
                 Finish = tuple.Item1;
 
                 // show probabilities
-                Info = tuple.Item2;
+                Info = new BindableCollection<string>(tuple.Item2);
+
+                // show runtime
+                Runtime = string.Format(UiServices.Locale("Runtime"), tuple.Item3);
 
                 Status = UiServices.Locale("Ready");
                 WaitAnimation = Visibility.Collapsed;

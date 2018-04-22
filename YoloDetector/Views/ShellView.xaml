@@ -6,8 +6,9 @@
         xmlns:local="clr-namespace:YoloDetector.Views"
         mc:Ignorable="d"
         Title="{StaticResource AppTitle}"
-        MinHeight="400" MinWidth="400"
-        Height="600" Width="600"
+        MinHeight="600" MinWidth="800"
+        Height="600" Width="800"
+        FontSize="15"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style x:Key="Base" TargetType="{x:Type Control}">
@@ -22,10 +23,11 @@
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
         <Style TargetType="{x:Type Button}" BasedOn="{StaticResource Base}" />
+        <Style TargetType="{x:Type ListBox}" BasedOn="{StaticResource Base}" />
     </Window.Resources>
-    <DockPanel>
+    <DockPanel Margin="5,0">
 
-        <Menu DockPanel.Dock="Top">
+        <Menu DockPanel.Dock="Top" FontSize="15">
             <MenuItem Header="{StaticResource MenuFile}">
                 <MenuItem Header="{StaticResource MenuExit}" x:Name="CloseApp" />
             </MenuItem>
@@ -35,16 +37,40 @@
         </Menu>
 
         <DockPanel DockPanel.Dock="Top">
-            <Button x:Name="OpenImage" Content="{StaticResource BtnOpenImage}" DockPanel.Dock="Right" />
-            <TextBox Text="{Binding Path=FilePath, Mode=OneWay}" />
+            <Button x:Name="OpenImage" Content="{StaticResource BtnOpenImage}" Width="250" />
+            <TextBox Text="{Binding Path=FilePath, Mode=OneWay}" IsReadOnly="True" />
         </DockPanel>
 
-        <StatusBar DockPanel.Dock="Bottom">
+        <StatusBar DockPanel.Dock="Bottom" Margin="0,5,0,0" FontSize="15">
             <StatusBarItem Content="{Binding Status}" />
         </StatusBar>
 
         <DockPanel DockPanel.Dock="Top">
+
+            <ListBox ItemsSource="{Binding LoadedImages}" DockPanel.Dock="Left" Width="250"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel IsItemsHost="True" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListBoxItem}">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                    <Border BorderBrush="Black" BorderThickness="1" Margin="5">
+                                        <ContentPresenter Width="250"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
+
             <DockPanel LastChildFill="True" Width="250" DockPanel.Dock="Right">
+                <TextBlock DockPanel.Dock="Top" Text="{StaticResource Dataset}" />
                 <ComboBox x:Name="YoloModels" DockPanel.Dock="Top" SelectedIndex="0"
                           SelectedItem="{Binding Path=SelectedYoloModel, Mode=OneWayToSource}"
                           DisplayMemberPath="Name" IsSynchronizedWithCurrentItem="True" />
@@ -55,11 +81,12 @@
                         Maximum="100" Margin="5,0" IsSnapToTickEnabled="True"
                         TickFrequency="1" />
                 <Button x:Name="FindObjects" DockPanel.Dock="Top" Content="{StaticResource BtnFind}" />
-
-                <TextBox Text="{Binding Path=Info}" />
+                <TextBlock DockPanel.Dock="Top"
+                           Text="{Binding Runtime}" />
+                <ListBox ItemsSource="{Binding Info}" DockPanel.Dock="Left" />
             </DockPanel>
 
-            <Border BorderThickness="1" BorderBrush="Black" Margin="5">
+            <Border BorderThickness="1" BorderBrush="Black" Margin="5" Padding="5">
                 <Grid>
                     <Image x:Name="Image" />
                     <local:BusyControl Visibility="{Binding WaitAnimation}" />

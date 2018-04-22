@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Caliburn.Micro;
 using OpenCvSharp;
@@ -102,7 +101,7 @@ namespace YoloDetector.Models
         /// <param name="image">input image</param>
         /// <param name="threshold">minimum threshold</param>
         /// <returns>Image with labels and labels</returns>
-        public Task<Tuple<Mat, string>> FindObjects(Mat image, double threshold)
+        public Task<Tuple<Mat, List<string>, long>> FindObjects(Mat image, double threshold)
         {
             return Task.Run(() =>
             {
@@ -121,8 +120,9 @@ namespace YoloDetector.Models
 
                 sw.Stop();
 
-                var result = new StringBuilder();
-                result.AppendLine($"Runtime: {sw.ElapsedMilliseconds} ms");
+                var result = new List<string>();
+
+                long time = sw.ElapsedMilliseconds;
 
                 /* YOLO2 VOC output
                  0 1 : center                    2 3 : w/h
@@ -163,8 +163,8 @@ namespace YoloDetector.Models
                             var height = prob.At<float>(i, 3) * image.Height;
 
                             // label formatting
-                            var label = $"{_labels[classes]} #{objectNumbers[classes]} {probability * 100:0.00}%";
-                            result.AppendLine(label);
+                            var label = $"{_labels[classes]} #{objectNumbers[classes]}";
+                            result.Add($"{label} {probability * 100:0.00}%");
 
                             // avoid left side over edge
                             var x1 = (centerX - width / 2) < 0 ? 0 : centerX - width / 2;
@@ -200,7 +200,7 @@ namespace YoloDetector.Models
                     }
                 }
 
-                return new Tuple<Mat, string>(image, result.ToString());
+                return new Tuple<Mat, List<string>, long>(image, result, time);
             });
         }
     }
