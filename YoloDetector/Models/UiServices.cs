@@ -8,7 +8,7 @@ namespace YoloDetector.Models
     {
         public static void ShowError(Exception ex)
         {
-            if (ex.InnerException != null)
+            while (ex.InnerException != null)
             {
                 ex = ex.InnerException;
             }

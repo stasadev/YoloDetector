@@ -21,51 +21,67 @@ namespace YoloDetector.Models
 
         public static BindableCollection<YoloModel> GetYoloModels()
         {
-            const string cocoPath = "yolo/coco/coco";
-            const string vocPath = "yolo/voc/voc";
+            const string cocoPath = "dataset/coco";
+            const string vocPath = "dataset/voc";
             const string tiny = "tiny";
 
-            var cocoNames = File.ReadAllLines($"{cocoPath}.names");
-            var vocNames = File.ReadAllLines($"{vocPath}.names");
-            var cocoColors = Enumerable.Repeat(false, cocoNames.Length).Select(x => Scalar.RandomColor()).ToArray();
-            var vocColors = Enumerable.Repeat(false, vocNames.Length).Select(x => Scalar.RandomColor()).ToArray();
-
-            var yoloModels = new BindableCollection<YoloModel>
+            try
             {
-                new YoloModel
+                var cocoNames = File.ReadAllLines($"{cocoPath}.names");
+                var vocNames = File.ReadAllLines($"{vocPath}.names");
+                var cocoColors = Enumerable.Repeat(false, cocoNames.Length).Select(x => Scalar.RandomColor()).ToArray();
+                var vocColors = Enumerable.Repeat(false, vocNames.Length).Select(x => Scalar.RandomColor()).ToArray();
+
+                // weights
+                // coco.weights     https://pjreddie.com/media/files/yolov2.weights
+                // cocotiny.weights https://pjreddie.com/media/files/yolov2-tiny.weights
+                // voc.weights      https://pjreddie.com/media/files/yolov2-voc.weights
+                // voctiny.weights  https://pjreddie.com/media/files/yolov2-tiny-voc.weights
+
+                var yoloModels = new BindableCollection<YoloModel>
                 {
-                    Name = "Coco",
-                    _cfg = $"{cocoPath}.cfg",
-                    _labels = cocoNames,
-                    _colors = cocoColors,
-                    _net = CvDnn.ReadNetFromDarknet($"{cocoPath}.cfg", $"{cocoPath}.weights")
-                },
-                new YoloModel
-                {
-                    Name = "Tiny Coco",
-                    _cfg = $"{cocoPath}{tiny}.cfg",
-                    _labels = cocoNames,
-                    _colors = cocoColors,
-                    _net = CvDnn.ReadNetFromDarknet($"{cocoPath}{tiny}.cfg", $"{cocoPath}{tiny}.weights")
-                },
-                new YoloModel
-                {
-                    Name = "Voc",
-                    _cfg = $"{vocPath}.cfg",
-                    _labels = vocNames,
-                    _colors = vocColors,
-                    _net = CvDnn.ReadNetFromDarknet($"{vocPath}.cfg", $"{vocPath}.weights")
-                },
-                new YoloModel
-                {
-                    Name = "Tiny Voc",
-                    _cfg = $"{vocPath}{tiny}.cfg",
-                    _labels = vocNames,
-                    _colors = vocColors,
-                    _net = CvDnn.ReadNetFromDarknet($"{vocPath}{tiny}.cfg", $"{vocPath}{tiny}.weights")
-                }
-            };
-            return yoloModels;
+                    new YoloModel
+                    {
+                        Name = "Coco",
+                        _cfg = $"{cocoPath}.cfg",
+                        _labels = cocoNames,
+                        _colors = cocoColors,
+                        _net = CvDnn.ReadNetFromDarknet($"{cocoPath}.cfg", $"{cocoPath}.weights")
+                    },
+                    new YoloModel
+                    {
+                        Name = "Tiny Coco",
+                        _cfg = $"{cocoPath}{tiny}.cfg",
+                        _labels = cocoNames,
+                        _colors = cocoColors,
+                        _net = CvDnn.ReadNetFromDarknet($"{cocoPath}{tiny}.cfg", $"{cocoPath}{tiny}.weights")
+                    },
+                    new YoloModel
+                    {
+                        Name = "Voc",
+                        _cfg = $"{vocPath}.cfg",
+                        _labels = vocNames,
+                        _colors = vocColors,
+                        _net = CvDnn.ReadNetFromDarknet($"{vocPath}.cfg", $"{vocPath}.weights")
+                    },
+                    new YoloModel
+                    {
+                        Name = "Tiny Voc",
+                        _cfg = $"{vocPath}{tiny}.cfg",
+                        _labels = vocNames,
+                        _colors = vocColors,
+                        _net = CvDnn.ReadNetFromDarknet($"{vocPath}{tiny}.cfg", $"{vocPath}{tiny}.weights")
+                    }
+                };
+                return yoloModels;
+            }
+            catch (Exception ex)
+            {
+                UiServices.ShowError(ex);
+                System.Windows.Application.Current.Shutdown();
+            }
+
+            return null;
         }
 
         /// <summary>
