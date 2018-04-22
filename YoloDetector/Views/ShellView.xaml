@@ -78,7 +78,7 @@
                            Text="{Binding ElementName=Threshold, Path=Value,
                                StringFormat={StaticResource Threshold}}" />
                 <Slider x:Name="Threshold" DockPanel.Dock="Top"
-                        Maximum="100" Margin="5,0" IsSnapToTickEnabled="True"
+                        Maximum="100" Margin="5" IsSnapToTickEnabled="True"
                         TickFrequency="1" />
                 <Button x:Name="FindObjects" DockPanel.Dock="Top" Content="{StaticResource BtnFind}" />
                 <TextBlock DockPanel.Dock="Top"
