@@ -84,18 +84,6 @@ namespace YoloDetector.Models
         }
 
         /// <summary>
-        /// Read size from cfg file
-        /// </summary>
-        /// <returns>size of image</returns>
-        private int GetSize()
-        {
-            return int.Parse(
-                new string(File.ReadAllLines(_cfg).First(x => x.StartsWith("width"))
-                    .Where(char.IsDigit).ToArray())
-            );
-        }
-
-        /// <summary>
         /// Find object in darknet yolo
         /// </summary>
         /// <param name="image">input image</param>
@@ -105,8 +93,13 @@ namespace YoloDetector.Models
         {
             return Task.Run(() =>
             {
+                // read size from cfg file
+                var size = int.Parse(
+                    new string(File.ReadAllLines(_cfg).First(x => x.StartsWith("width"))
+                        .Where(char.IsDigit).ToArray())
+                );
                 // setting blob, parameter are important
-                Mat blob = CvDnn.BlobFromImage(image, 1 / 255.0, new Size(GetSize(), GetSize()),
+                Mat blob = CvDnn.BlobFromImage(image, 1 / 255.0, new Size(size, size),
                     new Scalar(), true, false);
 
                 _net.SetInput(blob, "data");
