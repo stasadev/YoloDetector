@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:YoloDetector.Views"
+        xmlns:cal="http://www.caliburnproject.org"
         mc:Ignorable="d"
         Title="{StaticResource AppTitle}"
         MinHeight="600" MinWidth="800"
@@ -29,6 +30,7 @@
 
         <Menu DockPanel.Dock="Top" FontSize="15">
             <MenuItem Header="{StaticResource MenuFile}">
+                <MenuItem Header="{StaticResource MenuOpen}" x:Name="OpenImage" />
                 <MenuItem Header="{StaticResource MenuExit}" x:Name="CloseApp" />
             </MenuItem>
             <MenuItem Header="{StaticResource MenuHelp}">
@@ -37,7 +39,7 @@
         </Menu>
 
         <DockPanel DockPanel.Dock="Top">
-            <Button x:Name="OpenImage" Content="{StaticResource BtnOpenImage}" Width="250" />
+            <Button Content="{StaticResource MenuOpen}" Width="250" cal:Message.Attach="OpenImage" />
             <TextBox Text="{Binding Path=FilePath, Mode=OneWay}" IsReadOnly="True" />
         </DockPanel>
 

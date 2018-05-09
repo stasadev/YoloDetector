@@ -14,8 +14,8 @@ namespace YoloDetector.ViewModels
 {
     public class ShellViewModel : Screen
     {
-        private Mat _start = new Mat();
-        private Mat _finish = new Mat();
+        private Mat _start;
+        private Mat _finish;
         private WriteableBitmap _image;
         private string _filePath;
         private YoloModel _selectedYoloModel;
@@ -183,7 +183,7 @@ namespace YoloDetector.ViewModels
             var dlg = new OpenFileDialog
             {
                 Filter = UiServices.Locale("ImageFilter"),
-                Title = UiServices.Locale("BtnOpenImage"),
+                Title = UiServices.Locale("MenuOpen"),
                 Multiselect = true,
             };
             var result = dlg.ShowDialog();
@@ -242,7 +242,11 @@ namespace YoloDetector.ViewModels
 
         private void ClearResult()
         {
-            Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
+            if (Start != null)
+            {
+                Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
+            }
+
             Info.Clear();
             Runtime = string.Format(UiServices.Locale("Runtime"), 0);
         }
@@ -285,6 +289,22 @@ namespace YoloDetector.ViewModels
             {
                 UiServices.ShowError(ex);
             }
+        }
+
+        /// <summary>
+        /// Button
+        /// </summary>
+        public void CloseApp()
+        {
+            Application.Current.Shutdown();
+        }
+
+        /// <summary>
+        /// Button
+        /// </summary>
+        public void About()
+        {
+            MessageBox.Show(UiServices.Locale("Author"), UiServices.Locale("MenuAbout"));
         }
     }
 }

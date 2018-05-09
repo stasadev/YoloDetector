@@ -15,12 +15,14 @@
     <system:String x:Key="MenuExit">Exit</system:String>
     <system:String x:Key="MenuHelp">Help</system:String>
     <system:String x:Key="MenuAbout">About</system:String>
+    <system:String x:Key="MenuOpen">Open</system:String>
 
-    <system:String x:Key="BtnOpenImage">Open</system:String>
     <system:String x:Key="Dataset">Select dataset:</system:String>
     <system:String x:Key="BtnFind">Find</system:String>
     <system:String x:Key="Threshold">Threshold: {0:N0}%</system:String>
     <system:String x:Key="Runtime">Runtime: {0:N0} ms</system:String>
+
+    <system:String x:Key="Author">Stanislav Zhuk, 2018</system:String>
 
 
 </ResourceDictionary>
