@@ -35,5 +35,16 @@ namespace YoloDetector.Models
                 ? Scalar.Black
                 : Scalar.White;
         }
+
+        public static Mat ResizeImage(Mat image, double maxWidth = 1000.0)
+        {
+            while (image.Width / maxWidth > 1)
+            {
+                double scale = 1.0 / (image.Width / maxWidth);
+                image = image.Resize(new OpenCvSharp.Size(), scale, scale);
+            }
+
+            return image;
+        }
     }
 }

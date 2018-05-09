@@ -32,7 +32,7 @@ namespace YoloDetector.ViewModels
             get => _start;
             set
             {
-                _start = value;
+                _start = UiServices.ResizeImage(value);
                 Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
                 ClearResult();
             }
