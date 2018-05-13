@@ -9,6 +9,8 @@ The realization of [YOLO DNNs](https://docs.opencv.org/3.4.1/da/d9d/tutorial_dnn
 Used [YOLOv2](https://pjreddie.com/darknet/yolov2/) with datasets COCO and VOC.
 
 ## Install
+First [download](https://github.com/slavitnas/YoloDetector/releases/latest) the app.
+
 To run the app download these files:
 
 | Filename | Download |
