@@ -31,6 +31,7 @@
         <Menu DockPanel.Dock="Top" FontSize="15">
             <MenuItem Header="{StaticResource MenuFile}">
                 <MenuItem Header="{StaticResource MenuOpen}" x:Name="OpenImage" />
+                <MenuItem Header="{StaticResource MenuExport}" x:Name="Export" />
                 <MenuItem Header="{StaticResource MenuExit}" x:Name="CloseApp" />
             </MenuItem>
             <MenuItem Header="{StaticResource MenuHelp}">

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Caliburn.Micro;
+using Newtonsoft.Json;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
 
@@ -88,8 +89,8 @@ namespace YoloDetector.Models
         /// </summary>
         /// <param name="image">input image</param>
         /// <param name="threshold">minimum threshold</param>
-        /// <returns>Image with labels and labels</returns>
-        public Task<Tuple<Mat, List<string>, long>> FindObjects(Mat image, double threshold)
+        /// <returns>Image with labels, labels with probability, runtime, json</returns>
+        public Task<Tuple<Mat, List<string>, long, string>> FindObjects(Mat image, double threshold)
         {
             return Task.Run(() =>
             {
@@ -117,12 +118,10 @@ namespace YoloDetector.Models
 
                 long time = sw.ElapsedMilliseconds;
 
-                /* YOLO2 VOC output
-                 0 1 : center                    2 3 : w/h
-                 4 : confidence                  5 ~24 : class probability */
-                const int prefix = 5; //skip 0~4
+                const int prefix = 5;
 
                 var objectNumbers = new Dictionary<int, int>();
+                var objects = new List<object>();
 
                 for (int i = 0; i < prob.Rows; i++)
                 {
@@ -154,6 +153,16 @@ namespace YoloDetector.Models
                             var centerY = prob.At<float>(i, 1) * image.Height;
                             var width = prob.At<float>(i, 2) * image.Width;
                             var height = prob.At<float>(i, 3) * image.Height;
+
+                            objects.Add(new
+                            {
+                                Name = $"{_labels[classes]} #{objectNumbers[classes]}",
+                                CenterX = centerX,
+                                CenterY = centerY,
+                                Width = width,
+                                Height = height,
+                                Probability = probability * 100
+                            });
 
                             // label formatting
                             var label = $"{_labels[classes]} #{objectNumbers[classes]}";
@@ -193,7 +202,9 @@ namespace YoloDetector.Models
                     }
                 }
 
-                return new Tuple<Mat, List<string>, long>(image, result, time);
+                var json = JsonConvert.SerializeObject(objects, Formatting.Indented);
+
+                return new Tuple<Mat, List<string>, long, string>(image, result, time, json);
             });
         }
     }

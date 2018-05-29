@@ -12,6 +12,7 @@
     <system:String x:Key="ImageFilter">Images (*.bmp;*.jpg;*.png;*.gif)|*.bmp;*.jpg;*.png;*.gif|All files (*.*)|*.*</system:String>
 
     <system:String x:Key="MenuFile">File</system:String>
+    <system:String x:Key="MenuExport">Export to JSON</system:String>
     <system:String x:Key="MenuExit">Exit</system:String>
     <system:String x:Key="MenuHelp">Help</system:String>
     <system:String x:Key="MenuAbout">About</system:String>

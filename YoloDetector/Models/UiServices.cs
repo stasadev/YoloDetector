@@ -40,7 +40,7 @@ namespace YoloDetector.Models
         {
             while (image.Width / maxWidth > 1)
             {
-                double scale = 1.0 / (image.Width / maxWidth);
+                double scale = maxWidth / image.Width;
                 image = image.Resize(new OpenCvSharp.Size(), scale, scale);
             }
 

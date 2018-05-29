@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -23,6 +24,7 @@ namespace YoloDetector.ViewModels
         private string _runtime = string.Format(UiServices.Locale("Runtime"), 0);
         private string _status = UiServices.Locale("Ready");
         private Visibility _waitAnimation = Visibility.Collapsed;
+        private string _json;
         private BindableCollection<string> _info = new BindableCollection<string>();
         private BindableCollection<Image> _loadedImages = new BindableCollection<Image>();
         private BindableCollection<YoloModel> _yoloModels = YoloModel.GetYoloModels();
@@ -33,7 +35,7 @@ namespace YoloDetector.ViewModels
             set
             {
                 _start = UiServices.ResizeImage(value);
-                Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
+                Image = Start.ToWriteableBitmap();
                 ClearResult();
             }
         }
@@ -44,7 +46,7 @@ namespace YoloDetector.ViewModels
             set
             {
                 _finish = value;
-                Image = Finish.ToWriteableBitmap(PixelFormats.Bgr24);
+                Image = Finish.ToWriteableBitmap();
             }
         }
 
@@ -136,6 +138,7 @@ namespace YoloDetector.ViewModels
                 _status = value;
                 NotifyOfPropertyChange(() => Status);
                 NotifyOfPropertyChange(() => CanFindObjects);
+                NotifyOfPropertyChange(() => CanExport);
                 NotifyOfPropertyChange(() => WaitAnimation);
             }
         }
@@ -219,7 +222,7 @@ namespace YoloDetector.ViewModels
             try
             {
                 FilePath = dlg.FileName;
-                Start = new Mat(FilePath, ImreadModes.AnyDepth | ImreadModes.AnyColor);
+                Start = new Mat(FilePath);
             }
             catch (Exception ex)
             {
@@ -232,7 +235,7 @@ namespace YoloDetector.ViewModels
             try
             {
                 FilePath = (string) (sender as Image)?.Tag;
-                Start = new Mat(FilePath, ImreadModes.AnyDepth | ImreadModes.AnyColor);
+                Start = new Mat(FilePath);
             }
             catch (Exception ex)
             {
@@ -244,11 +247,12 @@ namespace YoloDetector.ViewModels
         {
             if (Start != null)
             {
-                Image = Start.ToWriteableBitmap(PixelFormats.Bgr24);
+                Image = Start.ToWriteableBitmap();
             }
 
             Info.Clear();
             Runtime = string.Format(UiServices.Locale("Runtime"), 0);
+            _json = null;
         }
 
         /// <summary>
@@ -282,12 +286,37 @@ namespace YoloDetector.ViewModels
                 // show runtime
                 Runtime = string.Format(UiServices.Locale("Runtime"), tuple.Item3);
 
+                _json = tuple.Item4;
+
                 Status = UiServices.Locale("Ready");
                 WaitAnimation = Visibility.Collapsed;
             }
             catch (Exception ex)
             {
                 UiServices.ShowError(ex);
+            }
+        }
+
+        /// <summary>
+        /// Enable|Disable Export button
+        /// </summary>
+        public bool CanExport => !string.IsNullOrEmpty(_json);
+
+        /// <summary>
+        /// Button
+        /// </summary>
+        public void Export()
+        {
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "Json (*.json)|*.json",
+                AddExtension = true,
+                DefaultExt = "json",
+                FileName = Path.GetFileNameWithoutExtension(FilePath) ?? string.Empty
+            };
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                File.WriteAllText(saveFileDialog.FileName, _json);
             }
         }
 
