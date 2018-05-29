@@ -37,6 +37,7 @@ namespace YoloDetector.ViewModels
                 _start = UiServices.ResizeImage(value);
                 Image = Start.ToWriteableBitmap();
                 ClearResult();
+                NotifyOfPropertyChange(() => CanExport);
             }
         }
 
